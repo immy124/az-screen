@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Arizona Environmental Justice Characteristics Web Map</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.css" rel="stylesheet" />
+<style>
+	body { margin: 0; padding: 0; }
+	#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<style>
+        .map-overlay {
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        position: absolute;
+        width: 32%;
+        top: 0;
+        left: 0;
+        padding: 10px;
+      }
+
+      .map-overlay .map-overlay-inner {
+        background-color: #dcdcdc;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+       
+      .map-overlay h2 {
+        line-height: 24px;
+        display: block;
+        margin: 0 0 10px;
+      }
+       
+        #menu {
+        background: #fff;
+        position: absolute;
+        z-index: 1;
+        top: 10px;
+        right: 10px;
+        border-radius: 3px;
+        width: 120px;
+        border: 1px solid rgba(0, 0, 0, 0.4);
+        font-family: 'Open Sans', sans-serif;
+    }
+
+        #menu a {
+        font-size: 13px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 0;
+        padding: 10px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        text-align: center;
+    }
+
+        #menu a:last-child {
+        border: none;
+    }
+
+        #menu a:hover {
+        background-color: #f3e79b;
+        color: #404040;
+    }
+
+        #menu a.active {
+        background-color: #f8a07e;
+        color: #ffffff;
+    }
+
+        #menu a.active:hover {
+        background: #f3e79b;
+    }
+    .legend {
+    background-color: #fff;
+    border-radius: 3px;
+    bottom: 30px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font: 15px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    padding: 10px;
+    position: absolute;
+    right: 10px;
+    z-index: 1;
+    }
+ 
+    .legend h4 {
+    margin: 0 0 10px;
+    }
+ 
+    .legend div span {
+    border-radius: 50%;
+    display: inline-block;
+    height: 30px;
+    margin-right: 5px;
+    width: 30px;
+    }
+    </style>
+ 
+    <div id="state-legend" class="legend">
+    <h4>Legend</h4>
+    <div><span style="background-color: #f3e79b"></span>High</div>
+    <div><span style="background-color: #f8a07e"></span> </div>
+    <div><span style="background-color: #ce6693"></span> </div>
+    <div><span style="background-color: #5c53a5"></span>Low</div>
+    </div>
+
+<nav id="menu"></nav>
+
+<body>
+<div id='map'></div>
+
+  <div class="map-overlay top">
+    <div class="map-overlay-inner">
+      <h2>Environmental Justice Characteristics: Arizona</h2>
+      <p align="justify" style="font-family:Helvetica; font-size:110%; ">This web map presents chosen variables within the <a href="https://www.epa.gov/ejscreen">EPA Environmental Justice Screening Dataset</a> for all census block groups in the state of Arizona. Variables were chosen to illustrate the correlation between minority (non-white) population percentage per census block group and environmental factors such as high respiratory hazard index scores or high cancer risk rates. <br>
+
+      </br><i>To view the choropleth map associated with each variable, toggle on and off the boxes corresponding to each variable at the top right of the map. Each choropleth map is partially transparent to allow the user to compare the maps of two or more variables at the same time.</i><br>
+    </br><b><u>Variable Index:</b></u><pre>
+</pre><b>MINORPCT:</b><i> The percentage of minority (non-white) residents per census block group.</i><pre>
+</pre><b>LOWINCPCT:</b><i> The percentage of low-income residents per census block group.</i><pre>
+</pre><b>D_CANCR_2:</b><i> The estimated lifetime inhalation cancer risk from the analyzed carcinogens in ambient outdoor air. </i><pre>
+</pre><b>PNPL:</b><i> The count of sites proposed and listed on the National Priorities List (NPL) within 5 km of the average resident in a block group, divided by distance, and calculated as the population-weighted average of blocks in each block group. </i><pre>
+</pre><b>D_LDPNT_2:</b><i> The percentage of homes built before 1960; serves as a lead paint indicator. </i><pre>
+</pre><b>D_RESP_2:</b><i> The respitatory hazard index. </i><pre>
+  </div>
+</div>
+</body>
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoiZXZlbHluZ29yZXkiLCJhIjoiY2tjY2poa2MzMDU0MDJzbXh5ZWd1dXJ2dyJ9.Q2PB14CpGlv9qRGFDFr1qA';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/evelyngorey/ckinz67xt04wt18nmmhim5ry7',
+        zoom: 5.8,
+        center: [-113.042583, 34.070433]
+    });
+
+    var hoveredStateId = null;
+
+var zoomThreshold = 4;
+var clickedAttr;
+
+    map.on('load', function () {
+        // add source and layer for museums
+        map.addSource('AZ_EJ_cbg_WGS', {
+            type: 'vector',
+            url: 'mapbox://evelyngorey.3nsy0hbe'
+        });
+
+        // add D_RESP_2
+    map.addLayer({
+        'id': 'D_RESP_2',
+        'type': 'fill',
+        'source': 'AZ_EJ_cbg_WGS',
+        'source-layer': 'AZ_EJ_cbg_WGS',
+        'layout': {
+        // make layer visible by default
+        'visibility': 'visible',
+        },
+        paint: {
+            'fill-color': {
+              property: 'D_RESP_2',
+              stops: [
+                [-68, "#5c53a5"], 
+                [168, "#f8a07e"],
+                [535, "#ce6693"],
+                [1944, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+});
+    // add next D_LDPNT_2
+    map.addLayer({
+        'id': 'D_LDPNT_2',
+        'type': 'fill',
+        'source': 'AZ_EJ_cbg_WGS',
+        'source-layer': 'AZ_EJ_cbg_WGS',
+        'layout': {
+        // make layer visible by default
+        'visibility': 'visible',
+        },
+        paint: {
+            'fill-color': {
+              property: 'D_LDPNT_2',
+              stops: [
+                [-46.6, "#5c53a5"], 
+                [94.8, "#f8a07e"],
+                [364, "#ce6693"],
+                [1124.2, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+});
+       // add PNPL
+    map.addLayer({
+        'id': 'PNPL',
+        'type': 'fill',
+        'source': 'AZ_EJ_cbg_WGS',
+        'source-layer': 'AZ_EJ_cbg_WGS',
+        'layout': {
+        // make layer visible by default
+        'visibility': 'visible',
+        },
+        paint: {
+            'fill-color': {
+              property: 'PNPL',
+              stops: [
+                [0.10, "#5c53a5"], 
+                [0.40, "#f8a07e"],
+                [1.2, "#ce6693"],
+                [2.3, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+});
+
+        // add D_CANCR_2
+    map.addLayer({
+        'id': 'D_CANCR_2',
+        'type': 'fill',
+        'source': 'AZ_EJ_cbg_WGS',
+        'source-layer': 'AZ_EJ_cbg_WGS',
+        'layout': {
+        // make layer visible by default
+        'visibility': 'visible',
+        },
+        paint: {
+            'fill-color': {
+              property: 'D_CANCR_2',
+              stops: [
+                [-5860, "#5c53a5"], 
+                [10256, "#f8a07e"],
+                [34260, "#ce6693"],
+                [123419, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+});
+
+    // add LOWINCPCT
+    map.addLayer({
+        'id': 'LOWINCPCT',
+        'type': 'fill',
+        'source': 'AZ_EJ_cbg_WGS',
+        'source-layer': 'AZ_EJ_cbg_WGS',
+        'layout': {
+        // make layer visible by default
+        'visibility': 'visible',
+        },
+        paint: {
+            'fill-color': {
+              property: 'LOWINCPCT',
+              stops: [
+                [0, "#5c53a5"], 
+                [0.25, "#f8a07e"],
+                [0.5, "#ce6693"],
+                [0.75, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+});
+
+    // add MINORPCT
+    map.addLayer({
+            'id': 'MINORPCT',
+            'type': 'fill',
+            'source': 'AZ_EJ_cbg_WGS',
+            'layout': {
+                // make layer visible by default
+                'visibility': 'visible'
+            },
+    paint: {
+            'fill-color': {
+              property: 'MINORPCT',
+              stops: [
+                [0, "#5c53a5"], 
+                [0.25, "#f8a07e"],
+                [0.5, "#ce6693"],
+                [0.75, "#f3e79b"],
+              ]
+            },
+
+            'fill-opacity': [
+              'case',
+                ['boolean', ['feature-state', 'hover'],
+                 false
+                ],
+                0.1,
+                0.75
+              ]
+          },
+            'source-layer': 'AZ_EJ_cbg_WGS'
+        });
+
+});
+
+    // enumerate ids of the layers
+    var toggleableLayerIds = ['MINORPCT', 'LOWINCPCT', 'D_CANCR_2', 'PNPL', 'D_LDPNT_2', 'D_RESP_2'];
+
+    // set up the corresponding toggle button for each layer
+    for (var i = 0; i < toggleableLayerIds.length; i++) {
+        var id = toggleableLayerIds[i];
+
+        var link = document.createElement('a');
+        link.href = '#';
+        link.className = 'active';
+        link.textContent = id;
+
+        link.onclick = function (e) {
+            var clickedLayer = this.textContent;
+            e.preventDefault();
+            e.stopPropagation();
+
+            var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+
+            // toggle layer visibility by changing the layout object's visibility property
+            if (visibility === 'visible') {
+                map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                this.className = '';
+            } else {
+                this.className = 'active';
+                map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+            }
+        };
+
+        var layers = document.getElementById('menu');
+        layers.appendChild(link);
+    }
+</script>
+</html>
